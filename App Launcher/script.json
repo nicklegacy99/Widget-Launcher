@@ -1,0 +1,7 @@
+{
+  "name": "App Launcher",
+  "icon": "text.alignleft",
+  "color": "rgba(10, 132, 255, 1)",
+  "version": "2.0.0",
+  "description": "Minimal text-only Home Screen launcher. Each word opens its app directly via URL scheme."
+}
