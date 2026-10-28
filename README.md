@@ -66,4 +66,5 @@ and name it `Open <App>` exactly as written on the widget, e.g. `Open Messages`,
   the first app in the list. Use Medium/Large for a list.
 - Third-party schemes only work if that app is installed. If a word does nothing when tapped,
   that app's scheme is wrong or has changed: give it a `Name=scheme://` override, or use the Shortcut fallback.
-- `index.tsx` only previews the widget when you run the script in the app.
+- `index.tsx` is the updater: run the App Launcher script in Scripting and it downloads the
+  latest `widget.tsx` and `index.tsx` from this repo's `app-launcher-widget` branch, then refreshes the widget.
