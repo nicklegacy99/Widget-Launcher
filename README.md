@@ -1,16 +1,16 @@
 # Widget Launcher
 
 A minimal, text-only Home Screen launcher for the [Scripting](https://apps.apple.com/us/app/-/id6479691128) app.
-Each word on the widget opens its app **directly** — no Scripting flash, no Shortcuts automation.
+Each word on the widget opens its app. iOS routes the tap through Scripting first, so Scripting
+appears briefly before the app (turn on Reduce Motion to soften it).
 
 ## How it works
 
 Each word is a `<Link url="...">` pointing at the target app's own URL scheme
-(`spotify://`, `mobilenotes://`, `sms:` ...). When you tap it, iOS opens that app directly.
-The old route (widget → Scripting → automation → app) isn't needed.
+(`ms-outlook://`, `mobilenotes://` ...). iOS opens Scripting, which hands the URL on to that app.
 
-Apps with no URL scheme (Camera, Clock, most banking apps) fall back to running a Shortcut,
-which briefly flashes the Shortcuts app.
+Apps with no usable URL scheme (Messages, Housecall Pro, Camera, ...) fall back to running a
+Shortcut named `Open <App>`, which briefly flashes the Shortcuts app as well.
 
 ## Install
 
@@ -25,15 +25,14 @@ often don't show up in the widget's script list.
 5. Add a **Scripting** widget to the Home Screen, **Medium** or **Large** size.
    If it was already there, remove it and add it again so the script list refreshes.
 6. Long-press it → **Edit Widget** → choose script **App Launcher**.
-7. In **Parameter**, list your apps, separated by commas:
+7. Leave **Parameter** empty to use the list at the top of `widget.tsx` (`DEFAULT_APPS`,
+   one app per line, shown top to bottom). Or type a list in Parameter, separated by commas:
 
    ```
-   Messages, Phone, Mail, Notes, Spotify, Camera
+   Messages, Outlook, Housecall Pro, Notes
    ```
 
-Leave the parameter empty to get the default list
-(Messages, Phone, Mail, Maps, Calendar, Notes, Reminders, Music).
-You can add several widgets with different lists.
+You can add several widgets with different Parameter lists.
 
 ## Parameter format
 
@@ -42,10 +41,10 @@ You can add several widgets with different lists.
 | `Notes`                  | Uses the built-in list at the top of `widget.tsx`                     |
 | `Strava=strava://`       | Opens that URL (anything with a `:` counts as a URL)      |
 | `Bank=Open Bank`         | Runs the Shortcut named `Open Bank`                       |
-| `Camera` (not built in)  | Runs the Shortcut named `Camera`                          |
+| `Camera` (not built in)  | Runs the Shortcut named `Open Camera`                     |
 
 For a Shortcut fallback: in Shortcuts, create a shortcut with one action, **Open App → (your app)**,
-and give it the name you used.
+and name it `Open <App>` exactly as written on the widget, e.g. `Open Messages`, `Open Housecall Pro`.
 
 ## Notes
 
