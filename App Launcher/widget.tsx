@@ -1,7 +1,12 @@
-import { Link, Text, VirtualNode, VStack, Widget } from "scripting"
+import { Button, Link, Text, VirtualNode, VStack, Widget } from "scripting"
 
-// Built-in URL schemes. iOS routes every widget tap through Scripting first,
-// which then opens the URL, so Scripting appears briefly before the app.
+// iOS 27 + Scripting 3.2.2 (TestFlight): rows become buttons that run the actions
+// listed in Edit Widget > Shortcuts, in the same order as the labels. These open
+// the app without routing the tap through Scripting.
+//
+// Fallback (older iOS, or rows beyond the configured Shortcuts list): rows are
+// Links to these URL schemes. iOS routes those taps through Scripting first,
+// so Scripting appears briefly before the app.
 // Add your own here, or inline in the widget parameter as `Name=scheme://`.
 const SCHEMES: Record<string, string> = {
   // Apple
@@ -85,15 +90,29 @@ Notes
 
 const items = parseItems(Widget.parameter, DEFAULT_APPS)
 
+// Number of actions configured in Edit Widget > Shortcuts (0 before iOS 27).
+const shortcutCount = Widget.shortcutCount ?? 0
+
 // Size the text so the list fills the widget's height.
 const height = Widget.displaySize.height
 const fontSize = Math.max(13, Math.min(30, Math.floor(height / (items.length * 1.45))))
 const rowSpacing = Math.max(0, Math.floor((height - 8 - items.length * fontSize * 1.2) / Math.max(1, items.length - 1)))
 
+function Label({ text }: { text: string }) {
+  return <Text
+    font={fontSize}
+    fontWeight={"light"}
+    foregroundStyle={"label"}
+    lineLimit={1}
+  >
+    {text}
+  </Text>
+}
+
 function LauncherView() {
-  // Small widgets only support one tap target for the whole widget,
-  // so they launch the first app in the list.
-  if (Widget.family === "systemSmall") {
+  // Without shortcut buttons, a small widget has only one tap target,
+  // so it launches the first app in the list.
+  if (Widget.family === "systemSmall" && shortcutCount === 0) {
     const first = items[0]
     return <VStack
       alignment={"leading"}
@@ -107,17 +126,14 @@ function LauncherView() {
     </VStack>
   }
 
-  const rows: VirtualNode[] = items.map(item =>
-    <Link url={item.url}>
-      <Text
-        font={fontSize}
-        fontWeight={"light"}
-        foregroundStyle={"label"}
-        lineLimit={1}
-      >
-        {item.label}
-      </Text>
-    </Link>
+  const rows: VirtualNode[] = items.map((item, index) =>
+    index < shortcutCount
+      ? <Button shortcutIndex={index} buttonStyle={"plain"}>
+        <Label text={item.label} />
+      </Button>
+      : <Link url={item.url}>
+        <Label text={item.label} />
+      </Link>
   )
 
   return <VStack
