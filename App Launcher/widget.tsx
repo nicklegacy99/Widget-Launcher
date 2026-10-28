@@ -10,6 +10,8 @@ import { Button, Link, Text, VirtualNode, VStack, Widget } from "scripting"
 // - `Name`                built-in URL scheme below, otherwise runs the Shortcut "Open Name"
 // - `Name=scheme://`      anything containing ":" is opened as a URL
 // - `Name=Shortcut`       runs the Shortcut with that exact name
+// - `color=white`         text color: a name (white, black, gray, red, ...), a hex
+//                         code like #FFD60A, or `auto` (black in light mode, white in dark)
 //
 // Words without a slot are Links: iOS routes those taps through Scripting first,
 // so Scripting appears briefly before the app. An empty Parameter shows nothing.
@@ -68,11 +70,41 @@ function defaultURL(label: string): string {
   return SCHEMES[label.toLowerCase()] ?? shortcutURL(`Open ${label}`)
 }
 
-function parseItems(parameter: string | null | undefined): LaunchItem[] {
+// Lowercase name -> Scripting color keyword, so "White" or "systemred" still work.
+const COLOR_KEYWORDS: Record<string, string> = Object.fromEntries([
+  "black", "darkGray", "lightGray", "white", "gray", "red", "green", "blue", "cyan",
+  "yellow", "magenta", "orange", "purple", "brown",
+  "systemRed", "systemGreen", "systemBlue", "systemOrange", "systemYellow", "systemPink",
+  "systemPurple", "systemTeal", "systemIndigo", "systemBrown", "systemMint", "systemCyan",
+  "label", "secondaryLabel", "tertiaryLabel", "accentColor",
+].map(name => [name.toLowerCase(), name]))
+
+function parseColor(value: string): string {
+  if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(value) || /^rgba?\(/i.test(value)) {
+    return value
+  }
+  return COLOR_KEYWORDS[value.toLowerCase()] ?? "label"
+}
+
+function splitEntries(parameter: string | null | undefined): string[] {
   return (parameter ?? "")
     .split(/[,;|\n]/)
     .map(part => part.trim())
     .filter(part => part !== "")
+}
+
+function isColorEntry(part: string): boolean {
+  return /^colou?r\s*=/i.test(part)
+}
+
+function parseTextColor(parameter: string | null | undefined): string {
+  const entry = splitEntries(parameter).filter(isColorEntry).pop()
+  return entry ? parseColor(entry.slice(entry.indexOf("=") + 1).trim()) : "label"
+}
+
+function parseItems(parameter: string | null | undefined): LaunchItem[] {
+  return splitEntries(parameter)
+    .filter(part => !isColorEntry(part))
     .map(part => {
       const eq = part.indexOf("=")
       const label = (eq === -1 ? part : part.slice(0, eq)).trim()
@@ -94,6 +126,7 @@ function parseItems(parameter: string | null | undefined): LaunchItem[] {
 }
 
 const items = parseItems(Widget.parameter)
+const textColor = parseTextColor(Widget.parameter)
 
 // Scripting 3.2.1 has four fixed slots set with `shortcut="shortcut1"`.
 // 3.2.2+ has an open-ended list set with `shortcutIndex={0}` and reports
@@ -129,7 +162,7 @@ function Label({ text }: { text: string }) {
   return <Text
     font={fontSize}
     fontWeight={"semibold"}
-    foregroundStyle={"label"}
+    foregroundStyle={textColor as any}
     lineLimit={1}
   >
     {text}
