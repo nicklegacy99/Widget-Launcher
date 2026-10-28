@@ -113,20 +113,22 @@ function slotProps(slot: number): any {
     : { shortcut: `shortcut${slot}` }
 }
 
-// A fixed size and gap keep the list compact at the top, like Blank Spaces.
-// The font only shrinks when the list wouldn't otherwise fit.
-const PADDING = 16
+// Bold, evenly spaced list anchored to the top. The font only shrinks when
+// the list wouldn't otherwise fit. No background is drawn here, so the
+// widget's Background setting (e.g. transparent) shows through.
+const PADDING = { top: 14, leading: 18, bottom: 14, trailing: 18 }
+const MAX_FONT = 22
 const LINE_HEIGHT = 1.2
-const GAP = 0.45
-const available = Widget.displaySize.height - PADDING * 2
-const fontSize = Math.max(12, Math.min(28,
+const GAP = 0.55
+const available = Widget.displaySize.height - PADDING.top - PADDING.bottom
+const fontSize = Math.max(12, Math.min(MAX_FONT,
   Math.floor(available / Math.max(1, items.length * (LINE_HEIGHT + GAP) - GAP))))
 const rowSpacing = Math.round(fontSize * GAP)
 
 function Label({ text }: { text: string }) {
   return <Text
     font={fontSize}
-    fontWeight={"light"}
+    fontWeight={"semibold"}
     foregroundStyle={"label"}
     lineLimit={1}
   >
