@@ -8,15 +8,16 @@ appears briefly before the app (turn on Reduce Motion to soften it).
 
 Needs iOS 27 and Scripting 3.2.1 or later.
 
-**Scripting 3.2.1** (four slots): long-press the widget → **Edit Widget**, and set
-**Shortcut 1** to **Shortcut 4** to **Open App → (app)** for the first four words, in order.
-Words 5 and up use the links described below.
+1. Long-press the widget → **Edit Widget** → set **Shortcut 1**–**Shortcut 4** to **Open App → (app)**.
+   (Scripting 3.2.2+: **Shortcuts** → **Add New Item**, as many as you like.)
+2. In **Parameter**, put `=` and the slot number after each word that should use one:
 
-**Scripting 3.2.2+** (no limit): **Edit Widget** → **Shortcuts** → **Add New Item** → **Open App**,
-one per word, in the same order as the words. Words without a matching action use the links.
-(Updating from 3.2.1 resets the slots; set them up again in the new list.)
+   ```
+   Messages=1, Outlook=2, Housecall Pro=3, Phone=4, Calendar, Notes
+   ```
 
-If you reorder or delete an action, reorder the words to match.
+Words without a number use the links below. Only numbered words use slots, so if you
+fill only slots 1 and 2, number only those two words.
 
 ## How it works (fallback)
 
@@ -39,14 +40,8 @@ often don't show up in the widget's script list.
 5. Add a **Scripting** widget to the Home Screen, **Medium** or **Large** size.
    If it was already there, remove it and add it again so the script list refreshes.
 6. Long-press it → **Edit Widget** → choose script **App Launcher**.
-7. Leave **Parameter** empty to use the list at the top of `widget.tsx` (`DEFAULT_APPS`,
-   one app per line, shown top to bottom). Or type a list in Parameter, separated by commas:
-
-   ```
-   Messages, Outlook, Housecall Pro, Notes
-   ```
-
-You can add several widgets with different Parameter lists.
+7. In **Parameter**, list your apps top to bottom, separated by commas (see below).
+   An empty Parameter shows an empty widget.
 
 ## Parameter format
 

@@ -1,15 +1,20 @@
 import { Button, Link, Text, VirtualNode, VStack, Widget } from "scripting"
 
-// iOS 27: rows become buttons that run the actions chosen in Edit Widget,
-// in the same order as the labels, so the app opens without routing the tap
-// through Scripting.
-// - Scripting 3.2.1: four slots, "Shortcut 1" to "Shortcut 4" (`shortcut="shortcut1"`).
-// - Scripting 3.2.2+: an open-ended Shortcuts list (`shortcutIndex={0}`).
+// Everything on the widget comes from its Parameter (Edit Widget > Parameter),
+// one word per app, separated by commas, shown top to bottom:
 //
-// Fallback (older iOS, or rows beyond the configured Shortcuts list): rows are
-// Links to these URL schemes. iOS routes those taps through Scripting first,
-// so Scripting appears briefly before the app.
-// Add your own here, or inline in the widget parameter as `Name=scheme://`.
+//   Messages=1, Outlook=2, Calendar, Notes, Bank=Open Bank, Strava=strava://
+//
+// - `Name=1` to `Name=4`  tap runs that Shortcut slot from Edit Widget (iOS 27).
+//                         Opens the app without Scripting appearing.
+// - `Name`                built-in URL scheme below, otherwise runs the Shortcut "Open Name"
+// - `Name=scheme://`      anything containing ":" is opened as a URL
+// - `Name=Shortcut`       runs the Shortcut with that exact name
+//
+// Words without a slot are Links: iOS routes those taps through Scripting first,
+// so Scripting appears briefly before the app. An empty Parameter shows nothing.
+
+// Built-in URL schemes. Add your own here, or inline as `Name=scheme://`.
 const SCHEMES: Record<string, string> = {
   // Apple
   // Messages has no URL that opens the inbox (sms: and messages:// both start a
@@ -45,23 +50,26 @@ const SCHEMES: Record<string, string> = {
   "uber": "uber://",
 }
 
+type LaunchItem = {
+  label: string
+  url: string
+  // 1-based Shortcut slot from Edit Widget, if the word has one.
+  slot?: number
+}
 
 // Fallback for apps without a URL scheme (Messages, Camera, Housecall Pro, ...):
 // make a Shortcut named "Open <App>" whose only action is "Open App".
-// This briefly flashes the Shortcuts app, which is the best iOS allows.
+// This briefly flashes the Shortcuts app.
 function shortcutURL(name: string): string {
   return `shortcuts://run-shortcut?name=${encodeURIComponent(name)}`
 }
 
-// Parameter format (set in the widget's settings on the Home Screen):
-//   Messages, Notes, Spotify, Bank=Open Bank, Strava=strava://
-// - `Name`             built-in scheme above, otherwise runs the Shortcut "Open Name"
-// - `Name=scheme://`   anything containing ":" is opened as a URL
-// - `Name=Shortcut`    runs the Shortcut with that exact name
-function parseItems(parameter: string | null | undefined, fallback: string): { label: string, url: string }[] {
-  const source = parameter != null && parameter.trim() !== "" ? parameter : fallback
+function defaultURL(label: string): string {
+  return SCHEMES[label.toLowerCase()] ?? shortcutURL(`Open ${label}`)
+}
 
-  return source
+function parseItems(parameter: string | null | undefined): LaunchItem[] {
+  return (parameter ?? "")
     .split(/[,;|\n]/)
     .map(part => part.trim())
     .filter(part => part !== "")
@@ -70,45 +78,50 @@ function parseItems(parameter: string | null | undefined, fallback: string): { l
       const label = (eq === -1 ? part : part.slice(0, eq)).trim()
       const target = eq === -1 ? "" : part.slice(eq + 1).trim()
 
+      if (/^\d+$/.test(target)) {
+        // A slot word still gets a URL in case its slot isn't available.
+        return { label, url: defaultURL(label), slot: Number(target) }
+      }
       if (target.includes(":")) {
         return { label, url: target }
       }
       if (target !== "") {
         return { label, url: shortcutURL(target) }
       }
-      return { label, url: SCHEMES[label.toLowerCase()] ?? shortcutURL(`Open ${label}`) }
+      return { label, url: defaultURL(label) }
     })
+    .filter(item => item.label !== "")
 }
 
-// Your app list, top to bottom. Used when the widget's Parameter is left empty.
-const DEFAULT_APPS = `
-Messages
-Outlook
-Housecall Pro
-Phone
-Calendar
-Notes
-`
+const items = parseItems(Widget.parameter)
 
-const items = parseItems(Widget.parameter, DEFAULT_APPS)
-
-// 3.2.2+ reports how many actions are configured (0 before iOS 27).
-// 3.2.1 has no shortcutCount, so its four slots are always used.
+// Scripting 3.2.1 has four fixed slots set with `shortcut="shortcut1"`.
+// 3.2.2+ has an open-ended list set with `shortcutIndex={0}` and reports
+// how many actions are configured (0 before iOS 27).
 const hasShortcutList = typeof (Widget as any).shortcutCount === "number"
-const shortcutCount: number = hasShortcutList ? (Widget as any).shortcutCount : 4
+const slotCount: number = hasShortcutList ? (Widget as any).shortcutCount : 4
+
+function usesSlot(item: LaunchItem): boolean {
+  return item.slot != null && item.slot >= 1 && item.slot <= slotCount
+}
 
 // The two Scripting versions name the button prop differently; build it
 // untyped so the file compiles against either version's type definitions.
-function shortcutProps(index: number): any {
+function slotProps(slot: number): any {
   return hasShortcutList
-    ? { shortcutIndex: index }
-    : { shortcut: `shortcut${index + 1}` }
+    ? { shortcutIndex: slot - 1 }
+    : { shortcut: `shortcut${slot}` }
 }
 
-// Size the text so the list fills the widget's height.
-const height = Widget.displaySize.height
-const fontSize = Math.max(13, Math.min(30, Math.floor(height / (items.length * 1.45))))
-const rowSpacing = Math.max(0, Math.floor((height - 8 - items.length * fontSize * 1.2) / Math.max(1, items.length - 1)))
+// A fixed size and gap keep the list compact at the top, like Blank Spaces.
+// The font only shrinks when the list wouldn't otherwise fit.
+const PADDING = 16
+const LINE_HEIGHT = 1.2
+const GAP = 0.45
+const available = Widget.displaySize.height - PADDING * 2
+const fontSize = Math.max(12, Math.min(28,
+  Math.floor(available / Math.max(1, items.length * (LINE_HEIGHT + GAP) - GAP))))
+const rowSpacing = Math.round(fontSize * GAP)
 
 function Label({ text }: { text: string }) {
   return <Text
@@ -122,25 +135,27 @@ function Label({ text }: { text: string }) {
 }
 
 function LauncherView() {
-  // Without shortcut buttons, a small widget has only one tap target,
-  // so it launches the first app in the list.
-  if (Widget.family === "systemSmall" && shortcutCount === 0) {
+  if (items.length === 0) {
+    return <VStack />
+  }
+
+  // A small widget without slot buttons has only one tap target,
+  // so it shows and launches just the first app.
+  if (Widget.family === "systemSmall" && !items.some(usesSlot)) {
     const first = items[0]
     return <VStack
       alignment={"leading"}
-      frame={{ maxWidth: "infinity", maxHeight: "infinity", alignment: "bottomLeading" }}
-      padding={4}
-      widgetURL={first?.url}
+      frame={{ maxWidth: "infinity", maxHeight: "infinity", alignment: "topLeading" }}
+      padding={PADDING}
+      widgetURL={first.url}
     >
-      <Text font={30} fontWeight={"light"} foregroundStyle={"label"}>
-        {first?.label ?? ""}
-      </Text>
+      <Label text={first.label} />
     </VStack>
   }
 
-  const rows: VirtualNode[] = items.map((item, index) =>
-    index < shortcutCount
-      ? <Button {...shortcutProps(index)} buttonStyle={"plain"}>
+  const rows: VirtualNode[] = items.map(item =>
+    usesSlot(item)
+      ? <Button {...slotProps(item.slot!)} buttonStyle={"plain"}>
         <Label text={item.label} />
       </Button>
       : <Link url={item.url}>
@@ -152,7 +167,7 @@ function LauncherView() {
     alignment={"leading"}
     spacing={rowSpacing}
     frame={{ maxWidth: "infinity", maxHeight: "infinity", alignment: "topLeading" }}
-    padding={4}
+    padding={PADDING}
   >
     {rows}
   </VStack>
