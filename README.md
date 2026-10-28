@@ -14,12 +14,18 @@ which briefly flashes the Shortcuts app.
 
 ## Install
 
-1. In the Files app, open `iCloud Drive › Scripting › scripts` and replace the
-   contents of the old `App Launcher` folder with the 4 files in [`App Launcher/`](App%20Launcher/).
-   (Or create a new script in Scripting and paste each file in.)
-2. Add a **Scripting** widget to the Home Screen, **Medium** or **Large** size.
-3. Long-press it → **Edit Widget** → choose script **App Launcher**.
-4. In **Parameter**, list your apps, separated by commas:
+Create the script **inside the Scripting app**. Scripts copied in through the Files app
+often don't show up in the widget's script list.
+
+1. Open **Scripting** → tap **+** → new script → name it `App Launcher`.
+2. In that script, add a file named exactly `widget.tsx`.
+3. Open [`App Launcher/widget.tsx`](App%20Launcher/widget.tsx) here, tap **Raw**, select all, copy,
+   and paste it into that file. Save.
+4. (Optional) Run the script once in Scripting to check the widget preview.
+5. Add a **Scripting** widget to the Home Screen, **Medium** or **Large** size.
+   If it was already there, remove it and add it again so the script list refreshes.
+6. Long-press it → **Edit Widget** → choose script **App Launcher**.
+7. In **Parameter**, list your apps, separated by commas:
 
    ```
    Messages, Phone, Mail, Notes, Spotify, Camera
@@ -33,7 +39,7 @@ You can add several widgets with different lists.
 
 | You write                | What happens                                              |
 | ------------------------ | --------------------------------------------------------- |
-| `Notes`                  | Uses the built-in scheme in `apps.ts`                     |
+| `Notes`                  | Uses the built-in list at the top of `widget.tsx`                     |
 | `Strava=strava://`       | Opens that URL (anything with a `:` counts as a URL)      |
 | `Bank=Open Bank`         | Runs the Shortcut named `Open Bank`                       |
 | `Camera` (not built in)  | Runs the Shortcut named `Camera`                          |
