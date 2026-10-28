@@ -6,14 +6,16 @@ appears briefly before the app (turn on Reduce Motion to soften it).
 
 ## iOS 27: open apps without Scripting appearing
 
-Needs iOS 27 and the Scripting **TestFlight** build (3.2.2 or later).
+Needs iOS 27 and Scripting 3.2.1 or later.
 
-1. Long-press the widget → **Edit Widget** → **Shortcuts** → **Add New Item** → **Open App**,
-   and pick each app **in the same order as the words on the widget**.
-   (For Messages pick Messages itself, so it opens the inbox.)
-2. Tap a word: it runs the matching action, not a link.
+**Scripting 3.2.1** (four slots): long-press the widget → **Edit Widget**, and set
+**Shortcut 1** to **Shortcut 4** to **Open App → (app)** for the first four words, in order.
+Words 5 and up use the links described below.
 
-Words beyond the end of the Shortcuts list fall back to the links described below.
+**Scripting 3.2.2+** (no limit): **Edit Widget** → **Shortcuts** → **Add New Item** → **Open App**,
+one per word, in the same order as the words. Words without a matching action use the links.
+(Updating from 3.2.1 resets the slots; set them up again in the new list.)
+
 If you reorder or delete an action, reorder the words to match.
 
 ## How it works (fallback)

@@ -1,8 +1,10 @@
 import { Button, Link, Text, VirtualNode, VStack, Widget } from "scripting"
 
-// iOS 27 + Scripting 3.2.2 (TestFlight): rows become buttons that run the actions
-// listed in Edit Widget > Shortcuts, in the same order as the labels. These open
-// the app without routing the tap through Scripting.
+// iOS 27: rows become buttons that run the actions chosen in Edit Widget,
+// in the same order as the labels, so the app opens without routing the tap
+// through Scripting.
+// - Scripting 3.2.1: four slots, "Shortcut 1" to "Shortcut 4" (`shortcut="shortcut1"`).
+// - Scripting 3.2.2+: an open-ended Shortcuts list (`shortcutIndex={0}`).
 //
 // Fallback (older iOS, or rows beyond the configured Shortcuts list): rows are
 // Links to these URL schemes. iOS routes those taps through Scripting first,
@@ -90,8 +92,18 @@ Notes
 
 const items = parseItems(Widget.parameter, DEFAULT_APPS)
 
-// Number of actions configured in Edit Widget > Shortcuts (0 before iOS 27).
-const shortcutCount = Widget.shortcutCount ?? 0
+// 3.2.2+ reports how many actions are configured (0 before iOS 27).
+// 3.2.1 has no shortcutCount, so its four slots are always used.
+const hasShortcutList = typeof (Widget as any).shortcutCount === "number"
+const shortcutCount: number = hasShortcutList ? (Widget as any).shortcutCount : 4
+
+// The two Scripting versions name the button prop differently; build it
+// untyped so the file compiles against either version's type definitions.
+function shortcutProps(index: number): any {
+  return hasShortcutList
+    ? { shortcutIndex: index }
+    : { shortcut: `shortcut${index + 1}` }
+}
 
 // Size the text so the list fills the widget's height.
 const height = Widget.displaySize.height
@@ -128,7 +140,7 @@ function LauncherView() {
 
   const rows: VirtualNode[] = items.map((item, index) =>
     index < shortcutCount
-      ? <Button shortcutIndex={index} buttonStyle={"plain"}>
+      ? <Button {...shortcutProps(index)} buttonStyle={"plain"}>
         <Label text={item.label} />
       </Button>
       : <Link url={item.url}>
